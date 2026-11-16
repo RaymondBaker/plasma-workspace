@@ -21,6 +21,12 @@ public:
     virtual void activate() = 0;
     virtual void deactivate() = 0;
 
+    /**
+     * Sets the minimum speed, in logical pixels per second, the pointer has to hit
+     * the screen edge with to show the panel. 0 means any speed shows it.
+     */
+    virtual void setRevealVelocity(int velocity) = 0;
+
 protected:
     AutoHideScreenEdge(PanelView *view);
 

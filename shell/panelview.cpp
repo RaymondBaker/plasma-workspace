@@ -400,6 +400,29 @@ void PanelView::setFloatingApplets(bool floatingApplets)
     Q_EMIT floatingAppletsChanged();
 }
 
+int PanelView::revealVelocity() const
+{
+    return m_revealVelocity;
+}
+
+void PanelView::setRevealVelocity(int velocity)
+{
+    velocity = std::max(0, velocity);
+    if (m_revealVelocity == velocity) {
+        return;
+    }
+
+    m_revealVelocity = velocity;
+    if (hasConfig()) {
+        resolutionIndependentConfig().writeEntry("revealVelocity", velocity);
+        m_corona->requestApplicationConfigSync();
+    }
+    if (m_autoHideScreenEdge) {
+        m_autoHideScreenEdge->setRevealVelocity(velocity);
+    }
+    Q_EMIT revealVelocityChanged();
+}
+
 int PanelView::minThickness() const
 {
     if (formFactor() == Plasma::Types::Vertical) {
@@ -848,6 +871,7 @@ void PanelView::restore()
 
     setFloating((bool)resolutionIndependentConfig().readEntry<int>("floating", defaultFloating()));
     setFloatingApplets((bool)resolutionIndependentConfig().readEntry<int>("floatingApplets", false));
+    setRevealVelocity(resolutionIndependentConfig().readEntry<int>("revealVelocity", 0));
     setThickness(configDefaults().readEntry("thickness", m_configuredThickness));
 
     const QSize screenSize = m_screenToFollow->size();
@@ -984,6 +1008,7 @@ void PanelView::setAutoHideEnabled(bool enabled)
     if (m_visibilityMode == VisibilityMode::AutoHide || (m_visibilityMode == VisibilityMode::DodgeWindows && m_touchingWindow)) {
         if (!m_autoHideScreenEdge) {
             m_autoHideScreenEdge = AutoHideScreenEdge::create(this);
+            m_autoHideScreenEdge->setRevealVelocity(m_revealVelocity);
         }
         if (enabled) {
             m_autoHideScreenEdge->activate();

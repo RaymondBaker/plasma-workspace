@@ -141,6 +141,12 @@ class PanelView : public PlasmaQuick::ContainmentView
      */
     Q_PROPERTY(bool floatingApplets READ floatingApplets WRITE setFloatingApplets NOTIFY floatingAppletsChanged)
 
+    /**
+     * The minimum speed, in pixels per second, the pointer has to hit the screen edge
+     * with to show the panel while it is hidden. 0 means that any speed shows the panel.
+     */
+    Q_PROPERTY(int revealVelocity READ revealVelocity WRITE setRevealVelocity NOTIFY revealVelocityChanged)
+
 
 public:
     enum VisibilityMode {
@@ -199,6 +205,9 @@ public:
 
     bool floatingApplets() const;
     void setFloatingApplets(bool floatingApplets);
+
+    int revealVelocity() const;
+    void setRevealVelocity(int velocity);
 
     int minThickness() const;
 
@@ -273,6 +282,7 @@ Q_SIGNALS:
     void enabledBordersChanged();
     void floatingChanged();
     void floatingAppletsChanged();
+    void revealVelocityChanged();
     void minThicknessChanged();
 
     void geometryChanged();
@@ -346,6 +356,7 @@ private:
     bool m_initCompleted;
     bool m_floating;
     bool m_floatingApplets;
+    int m_revealVelocity = 0;
     bool m_containsMouse = false;
     bool m_containsDrag = false;
     bool m_fakeEventPending = false;

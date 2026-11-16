@@ -14,6 +14,8 @@
 
 #include <KWindowSystem>
 
+#include <algorithm>
+
 #include <QDebug>
 #include <QWindow>
 #include <QtWaylandClient/QWaylandClientExtension>
@@ -26,7 +28,7 @@ class WaylandScreenEdgeManagerV1 : public QWaylandClientExtensionTemplate<Waylan
 
 public:
     WaylandScreenEdgeManagerV1()
-        : QWaylandClientExtensionTemplate(1)
+        : QWaylandClientExtensionTemplate(2)
     {
         initialize();
     }
@@ -65,6 +67,7 @@ public:
 
     void deactivate() override;
     void activate() override;
+    void setRevealVelocity(int velocity) override;
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -72,10 +75,12 @@ protected:
 private:
     bool create();
     void destroy();
+    void sendRevealVelocity();
 
     std::unique_ptr<WaylandScreenEdgeManagerV1> m_manager;
     std::unique_ptr<WaylandAutoHideScreenEdgeV1> m_edge;
     bool m_active = false;
+    int m_revealVelocity = 0;
 };
 
 WaylandAutoHideScreenEdge::WaylandAutoHideScreenEdge(PanelView *view)
@@ -137,6 +142,24 @@ void WaylandAutoHideScreenEdge::activate()
     }
 }
 
+void WaylandAutoHideScreenEdge::setRevealVelocity(int velocity)
+{
+    velocity = std::max(0, velocity);
+    if (m_revealVelocity == velocity) {
+        return;
+    }
+    m_revealVelocity = velocity;
+    sendRevealVelocity();
+}
+
+void WaylandAutoHideScreenEdge::sendRevealVelocity()
+{
+    // Compositors that only know version 1 of the protocol show the panel at any speed
+    if (m_edge && wl_proxy_get_version(reinterpret_cast<wl_proxy *>(m_edge->object())) >= KDE_AUTO_HIDE_SCREEN_EDGE_V1_SET_REVEAL_VELOCITY_SINCE_VERSION) {
+        m_edge->set_reveal_velocity(m_revealVelocity);
+    }
+}
+
 bool WaylandAutoHideScreenEdge::create()
 {
     auto waylandWindow = m_view->nativeInterface<QNativeInterface::Private::QWaylandWindow>();
@@ -162,6 +185,7 @@ bool WaylandAutoHideScreenEdge::create()
     }
 
     m_edge = std::make_unique<WaylandAutoHideScreenEdgeV1>(m_view->location(), m_manager->get_auto_hide_screen_edge(border, waylandWindow->surface()));
+    sendRevealVelocity();
     return true;
 }
 
